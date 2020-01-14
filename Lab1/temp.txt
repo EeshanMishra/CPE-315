@@ -1,0 +1,9 @@
+prog 1: return any bits below the divisor 
+int mod(int num, int div){
+	int temp = 1;
+	if(temp != div){
+		temp += temp;
+	}
+	return temp & num;
+
+
