@@ -2,20 +2,20 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.*;
 
-public class Lab2 {
+public class lab2 {
 	public static void main(String[] args) throws FileNotFoundException{
 		File inputFile = new File(args[0]);					//open and read file
 		Scanner scanner1 = new Scanner(inputFile);			
 		Map<String, String> registerLUT = createLUT();		//create look up table mapping registers to integer values
 		Map<String,Integer> labels = storeLabelAddresses(scanner1);	//first pass, create a hashmap of labels and line 
-		System.out.println(labels);
+		//System.out.println(labels);
 		Scanner scanner2 = new Scanner(inputFile);					//scanner to reread file for second pass
 		generateBinary(scanner2,labels, registerLUT);							//second pass, print out op-codes
 	}
 
 	public static Map<String,Integer> storeLabelAddresses(Scanner sc){
 		Map<String,Integer> labels = new HashMap<String,Integer>();
-		int line = 1;
+		int line = 0;
 		while(sc.hasNextLine()){
 			boolean hasLabel = false;
 			String thisLine = sc.nextLine().trim();
@@ -26,13 +26,16 @@ public class Lab2 {
 					break;
 				}
 			}
-			line++;
+			if (thisLine.length() != 0 && thisLine.trim().charAt(0) != '#') {
+				line++;
+			}	
 		}
 		return labels;
 	}
 	
 	public static void generateBinary(Scanner sc, Map<String,Integer> labels, Map<String,String> registerLUT) {
 		boolean quit = false;
+		int currLine = 0;
 		while(sc.hasNextLine() && !quit) {
 			String thisLine = sc.nextLine().trim();
 			//System.out.println(thisLine);
@@ -61,6 +64,7 @@ public class Lab2 {
 						}	
 					}
 					if (hasInstruction) {
+						currLine++;
 						String firstWord = thisLine.substring(h,i+1);
 						String[] registers = thisLine.substring(i+1,thisLine.length()).split(",");
 						for (int n=0; n<registers.length; n++) {
@@ -68,12 +72,11 @@ public class Lab2 {
 							if (n+1 == registers.length) {
 								for (int m=0; m<registers[n].length(); m++) {
 									if(registers[n].charAt(m) == '#') {
-										registers[n] = registers[n].substring(0,m);
+										registers[n] = registers[n].substring(0,m).trim();
 									}
 								}
 							}
 						}
-						//System.out.println(registers.toString());
 						switch (firstWord){
 							case("and"):
 								bits += "000000 ";
@@ -98,48 +101,73 @@ public class Lab2 {
 								bits += registerLUT.get(registers[0]) + " ";
 								bits += "00000 ";
 								bits += "100000";
-								/* figure out how to represent immediate values*/
 								break;
 							case("addi"):
 								bits += "001000 ";
 								bits += registerLUT.get(registers[1]) + " ";
 								bits += registerLUT.get(registers[0]) + " ";
-								/* figure out how to represent immediate values*/
+								bits += decimalToBinary(registers[2], 16);
 								break;
 							case("sll"):
 								bits += "000000 ";
 								bits += "00000 ";
 								bits += registerLUT.get(registers[1]) + " ";
 								bits += registerLUT.get(registers[0]) + " ";
-								/* figure out how to represent immediate value (5bits)*/
+								bits += decimalToBinary(registers[2], 5) + " ";
 								bits += "000000";	
 								break;
 							case("sub"):
 								bits += "000000 ";
+								bits += registerLUT.get(registers[1]) + " ";
+								bits += registerLUT.get(registers[2]) + " ";
+								bits += registerLUT.get(registers[0]) + " ";
+								bits += "00000 ";
+								bits += "100010";
 								break;
 							case("slt"):
 								bits += "000000 ";
+								bits += registerLUT.get(registers[1]) + " ";
+								bits += registerLUT.get(registers[2]) + " ";
+								bits += registerLUT.get(registers[0]) + " ";
+								bits += "00000 ";
+								bits += "101010";
 								break;
 							case("beq"):
 								bits += "000100 ";
+								bits += registerLUT.get(registers[0]) + " ";
+								bits += registerLUT.get(registers[1]) + " ";
+								bits += getBranchOffset(labels.get(registers[2]), currLine, 16);
 								break;
 							case("bne"):
 								bits += "000101 ";
+								bits += registerLUT.get(registers[0]) + " ";
+								bits += registerLUT.get(registers[1]) + " ";
+								bits += getBranchOffset(labels.get(registers[2]), currLine, 16);
 								break;
 							case("lw"):
 								bits += "100011 ";
+								bits += registerLUT.get(registers[1].substring(2,5)) + " ";
+								bits += registerLUT.get(registers[0]) + " ";
+								bits += decimalToBinary(registers[1].substring(0,registers[1].indexOf('(')), 16);
 								break;
 							case("sw"):
 								bits += "101011 ";
+								bits += registerLUT.get(registers[1].substring(2,5)) + " ";
+								bits += registerLUT.get(registers[0]) + " ";
+								bits += decimalToBinary(registers[1].substring(0,registers[1].indexOf('(')), 16);
 								break;
 							case("j"):
 								bits += "000010 ";
+								bits += getBranchOffset(labels.get(registers[0]), 0, 26);
 								break;
 							case("jr"):
 								bits += "000000 ";
+								bits += registerLUT.get(registers[0]) + " ";
+								bits += "000000000000000 001000";
 								break;
 							case("jal"):
 								bits += "000011 ";
+								bits += getBranchOffset(labels.get(registers[0]), 0, 26);
 								break;
 							default:
 								bits += "invalid instruction: " + firstWord;
@@ -150,6 +178,37 @@ public class Lab2 {
 				}	
 			}	
 		}
+	}
+	
+	public static String getBranchOffset(int labelLineNum, int currLineNum, int numBits) {
+		int offset = labelLineNum-currLineNum;
+		String binaryString = "";
+		String binaryOffset = Integer.toBinaryString(offset);
+		if (binaryOffset.length() > numBits) {
+			binaryOffset = binaryOffset.substring(binaryOffset.length()-numBits, binaryOffset.length());
+		} else {
+			int numZeroes = numBits - binaryOffset.length();
+			for (int i=0; i<numZeroes; i++) {
+				binaryString += '0';
+			}
+		}
+		binaryString += binaryOffset;
+		return binaryString;
+	}
+	
+	public static String decimalToBinary(String value, int numBits){
+		String binaryString = "";
+		String binaryRepresentation = Integer.toBinaryString(Integer.parseInt(value));
+		if (binaryRepresentation.length()>numBits) {
+			binaryRepresentation = binaryRepresentation.substring(binaryRepresentation.length()-numBits, binaryRepresentation.length());
+		} else {
+			int numZeroes = numBits - binaryRepresentation.length();
+			for (int i=0; i<numZeroes; i++) {
+				binaryString += '0';
+			}
+		}	
+		binaryString += binaryRepresentation;
+		return binaryString;
 	}
 	
 	public static Map<String, String> createLUT() {
