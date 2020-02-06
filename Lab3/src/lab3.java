@@ -6,15 +6,13 @@ public class lab3 {
 		File inputFile = new File(args[0]);										//open and read file
 		Scanner scanner1 = new Scanner(inputFile);			
 		MIPSemulator emulator = new MIPSemulator();
-		//Map<String, Integer> registerLUT = createLUT();							//create look up table mapping registers to integer values
 		Map<String,Integer> labels = storeLabelAddresses(scanner1);				//first pass, create a hashmap of labels and line 
-		//int[] dataMemory = new int[8192]; 
 		Scanner scanner2 = new Scanner(inputFile);								//scanner to reread file for second pass
 		ArrayList<String> instructions = instructionArray(scanner2);
 		if (args.length == 2) {
-			//script
+			File script = new File(args[1]);
+			processScriptInputs(script, labels, instructions, emulator);
 		} else {
-			//interactive
 			processInteractiveInputs(labels, instructions, emulator);
 		}							
 	}
@@ -81,6 +79,19 @@ public class lab3 {
 		return labels;
 	}
 	
+	public static void processScriptInputs(File script, Map<String,Integer> labels, ArrayList<String> instructions, MIPSemulator emulator) throws FileNotFoundException {
+		Scanner sc = new Scanner(script);
+		if (sc.hasNext()) {
+			int PCline = 0;
+			String inputLine;
+			do {	
+				inputLine = sc.nextLine().trim();
+				System.out.println("mips> " + inputLine);
+				PCline = processInput(PCline,inputLine,instructions,labels,emulator);
+			} while(sc.hasNext() && PCline != -1);
+		}	
+	}
+	
 	public static void processInteractiveInputs(Map<String,Integer> labels, ArrayList<String> instructions, MIPSemulator emulator) throws IOException{
 		boolean quit = false;
         BufferedReader reader = new BufferedReader(new InputStreamReader(System.in)); 
@@ -105,7 +116,7 @@ public class lab3 {
 						           "q = exit the program\r\n");
 				break;
 			case ('d'):
-				System.out.println("pc = " + emulator.getRegisterValue("pc"));
+				System.out.println("\npc = " + emulator.getRegisterValue("pc"));
 				System.out.println("$0 = " + emulator.getRegisterValue("$0") + "\t\t$v0 = " + emulator.getRegisterValue("$v0") + "\t\t$v1 = " +
 							emulator.getRegisterValue("$v1") + "\t\ta0 = " + emulator.getRegisterValue("$a0"));
 				System.out.println("$a1 = " + emulator.getRegisterValue("$a1") + "\t\t$a2 = " + emulator.getRegisterValue("$a2") + "\t\t$a3 = " +
@@ -119,7 +130,7 @@ public class lab3 {
 				System.out.println("$s5 = " + emulator.getRegisterValue("$s5") + "\t\t$s6 = " + emulator.getRegisterValue("$s6") + "\t\t$s7 = " +
 							emulator.getRegisterValue("$s7") + "\t\tt8 = " + emulator.getRegisterValue("$t8"));
 				System.out.println("$t9 = " + emulator.getRegisterValue("$t9") + "\t\t$sp = " + emulator.getRegisterValue("$sp") + "\t\t$ra = " +
-							emulator.getRegisterValue("$ra"));
+							emulator.getRegisterValue("$ra") + "\n");
 				break;
 			case ('s'):
 				if (inputLine.length() > 1) {
@@ -145,10 +156,11 @@ public class lab3 {
 				int lowerBound = Integer.parseInt(indeces[1]);
 				int upperBound = Integer.parseInt(indeces[2]);
 				for (int j=lowerBound; j<=upperBound; j++) {
-					System.out.println("[" + j + "] = " + emulator.getDataMemoryValue(j));
+					System.out.println("[" + j + "] = " + emulator.getDataMemoryValue(j) + "\n");
 				}
 				break;
 			case ('c'):
+				System.out.println("\tSimulator reset\n");
 				for (Map.Entry<String, Integer> entry : emulator.getRegister().entrySet())
 				     entry.setValue(0);
 				break;
@@ -228,10 +240,11 @@ public class lab3 {
 				PCline = emulator.getRegisterValue("$ra");
 				break;
 			case("jal"):
-				System.out.println("DO THIS LATER");	
+				emulator.setRegisters("$ra", PCline);
+				PCline = labels.get(lineContents[1]);
 				break;
 			default:
-				System.out.println("invalid");
+				System.out.println("invalid instruction");
 		}
 		return PCline;
 	}
