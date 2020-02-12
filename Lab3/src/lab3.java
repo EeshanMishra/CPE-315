@@ -63,11 +63,9 @@ public class lab3 {
 		Map<String,Integer> labels = new HashMap<String,Integer>();
 		int line = 0;
 		while(sc.hasNextLine()){
-			boolean hasLabel = false;
 			String thisLine = sc.nextLine().trim();
 			for (int i = 0; i < thisLine.length(); i++) {
 				if (thisLine.charAt(i) == ':') {
-					hasLabel = true;
 					labels.put(thisLine.substring(0,i),line);
 					break;
 				}
@@ -89,11 +87,11 @@ public class lab3 {
 				System.out.println("mips> " + inputLine);
 				PCline = processInput(PCline,inputLine,instructions,labels,emulator);
 			} while(sc.hasNext() && PCline != -1);
-		}	
+		}
+		sc.close();
 	}
 	
 	public static void processInteractiveInputs(Map<String,Integer> labels, ArrayList<String> instructions, MIPSemulator emulator) throws IOException{
-		boolean quit = false;
         BufferedReader reader = new BufferedReader(new InputStreamReader(System.in)); 
 		int PCline = 0;
         while(PCline != -1) {
@@ -155,9 +153,11 @@ public class lab3 {
 				String[] indeces = inputLine.substring(0,inputLine.length()).split(" ");
 				int lowerBound = Integer.parseInt(indeces[1]);
 				int upperBound = Integer.parseInt(indeces[2]);
+				System.out.println("\n");
 				for (int j=lowerBound; j<=upperBound; j++) {
-					System.out.println("[" + j + "] = " + emulator.getDataMemoryValue(j) + "\n");
+					System.out.println("[" + j + "] = " + emulator.getDataMemoryValue(j));
 				}
+				System.out.println("\n");
 				break;
 			case ('c'):
 				System.out.println("\tSimulator reset\n");
@@ -203,7 +203,7 @@ public class lab3 {
 				PCline++;
 				break;
 			case("slt"):
-				if(emulator.getRegisterValue(lineContents[2].trim()) > emulator.getRegisterValue(lineContents[3].trim())) {
+				if(emulator.getRegisterValue(lineContents[2].trim()) >= emulator.getRegisterValue(lineContents[3].trim())) {
 					emulator.setRegisters(lineContents[1].trim(), 0);
 				} else {
 					emulator.setRegisters(lineContents[1].trim(), 1);
@@ -213,35 +213,39 @@ public class lab3 {
 			case("beq"):
 				if(emulator.getRegisterValue(lineContents[1].trim()) == emulator.getRegisterValue(lineContents[2].trim())) {
 					PCline = labels.get(lineContents[3].trim());
+				} else {
+					PCline++;
 				}
 				break;
 			case("bne"):
 				if(emulator.getRegisterValue(lineContents[1].trim()) != emulator.getRegisterValue(lineContents[2].trim())) {
 					PCline = labels.get(lineContents[3].trim());
+				} else {
+					PCline++;
 				}
-				PCline++;
 				break;
 			case("lw"):
 				memLocation = lineContents[2].split("[(]");
 				memLocation[1] = memLocation[1].substring(0,memLocation[1].length()-1);
-				emulator.setRegisters(lineContents[1], emulator.getDataMemoryValue(emulator.getRegisterValue(lineContents[1])+Integer.parseInt(lineContents[3])));
+				emulator.setRegisters(lineContents[1], emulator.getDataMemoryValue(emulator.getRegisterValue(memLocation[1])+Integer.parseInt(memLocation[0])));
 				PCline++;
 				break;
 			case("sw"):
 				memLocation = lineContents[2].split("[(]");
 				memLocation[1] = memLocation[1].substring(0,memLocation[1].length()-1);
-				emulator.setDataMemory(emulator.getRegisterValue(lineContents[1]), emulator.getRegisterValue(memLocation[1])+Integer.parseInt(memLocation[0]));		
+				emulator.setDataMemory(emulator.getRegisterValue(lineContents[1]), emulator.getRegisterValue(memLocation[1])+Integer.parseInt(memLocation[0]));	
 				PCline++;
 				break;
 			case("j"):
 				PCline = labels.get(lineContents[1]);
 				break;
 			case("jr"):
-				PCline = emulator.getRegisterValue("$ra");
+				PCline = emulator.getRegisterValue(lineContents[1]);				//TODO: CHECK
 				break;
 			case("jal"):
-				emulator.setRegisters("$ra", PCline);
+				emulator.setRegisters("$ra", PCline+1);
 				PCline = labels.get(lineContents[1]);
+				clearNonPersistantRegisters(emulator);
 				break;
 			default:
 				System.out.println("invalid instruction");
@@ -249,35 +253,23 @@ public class lab3 {
 		return PCline;
 	}
 		
-	public static String getBranchOffset(int labelLineNum, int currLineNum, int numBits) {
-		int offset = labelLineNum-currLineNum;
-		String binaryString = "";
-		String binaryOffset = Integer.toBinaryString(offset);
-		if (binaryOffset.length() > numBits) {
-			binaryOffset = binaryOffset.substring(binaryOffset.length()-numBits, binaryOffset.length());
-		} else {
-			int numZeroes = numBits - binaryOffset.length();
-			for (int i=0; i<numZeroes; i++) {
-				binaryString += '0';
-			}
-		}
-		binaryString += binaryOffset;
-		return binaryString;
-	}
-	
-	public static String decimalToBinary(String value, int numBits){
-		String binaryString = "";
-		String binaryRepresentation = Integer.toBinaryString(Integer.parseInt(value));
-		if (binaryRepresentation.length()>numBits) {
-			binaryRepresentation = binaryRepresentation.substring(binaryRepresentation.length()-numBits, binaryRepresentation.length());
-		} else {
-			int numZeroes = numBits - binaryRepresentation.length();
-			for (int i=0; i<numZeroes; i++) {
-				binaryString += '0';
-			}
-		}	
-		binaryString += binaryRepresentation;
-		return binaryString;
+	public static void clearNonPersistantRegisters(MIPSemulator emulator) {
+		emulator.setRegisters("v0", 0);
+		emulator.setRegisters("v1", 0);
+		emulator.setRegisters("a0", 0);
+		emulator.setRegisters("a1", 0);
+		emulator.setRegisters("a2", 0);
+		emulator.setRegisters("a3", 0);
+		emulator.setRegisters("t0", 0);
+		emulator.setRegisters("t1", 0);
+		emulator.setRegisters("t2", 0);
+		emulator.setRegisters("t3", 0);
+		emulator.setRegisters("t4", 0);
+		emulator.setRegisters("t5", 0);
+		emulator.setRegisters("t6", 0);
+		emulator.setRegisters("t7", 0);
+		emulator.setRegisters("t8", 0);
+		emulator.setRegisters("t9", 0);
 	}
 }
 
