@@ -137,9 +137,14 @@ public class lab4 {
 					for(int i=0;i<numSteps;i++) {
 						if (PCline < instructions.size()) {
 							PCline = processNextInstr(PCline, instructions, labels, emulator, cpu);
+							System.out.println("\npc\tif/id\tid/exe\texe/mem\tmem/wb\n" + 
+							           PCline + "\t" + 
+							           cpu.intermediateRegs.get("IF/ID reg") + "\t" + 
+							           cpu.intermediateRegs.get("ID/EXE reg") + "\t" +
+							           cpu.intermediateRegs.get("EXE/MEM reg") + "\t" + 
+							           cpu.intermediateRegs.get("MEM/WB reg") + "\n");	
 						}	
 					}
-					//System.out.println("\t" + numSteps + " instruction(s) executed");
 				} else {
 					PCline = processNextInstr(PCline, instructions, labels, emulator, cpu);
 					System.out.println("\npc\tif/id\tid/exe\texe/mem\tmem/wb\n" + 
@@ -154,10 +159,7 @@ public class lab4 {
 				while(PCline<instructions.size()) {
 					PCline = processNextInstr(PCline, instructions, labels, emulator, cpu); 
 				}
-				for (int i=0; i<4; i++) {
-					executeInstruction(cpu, "empty");
-				}
-				System.out.println("Program complete\n" + cpu.printCPI());			
+				System.out.println("\nProgram complete\n" + cpu.printCPI() + "\n");			
 				break;
 			case ('m'):
 				String[] indeces = inputLine.substring(0,inputLine.length()).split(" ");
@@ -198,15 +200,15 @@ public class lab4 {
 				executeInstruction(cpu, "squash");
 				cpu.jumpCtr = 0;
 				cpu.jumpFlag = false;
-				return PCline;
+				//return PCline;
+				return emulator.jumpDestination;	
 			}
 		}  
 		if (cpu.takenBranchFlag) {
 			cpu.branchCtr++;
 			if (cpu.branchCtr == 3) {
 				cpu.squash3();
-				cpu.takenBranchFlag = false;
-				return PCline;
+				return emulator.branchDestination;
 			}
 		}
 		if (cpu.useAfterLoadFlag) {
@@ -224,95 +226,103 @@ public class lab4 {
 		String[] lineContents = thisLine.split(" ");
 		executeInstruction(cpu, lineContents[0]);
 		String[] memLocation;
-		switch (lineContents[0].trim()){
-			case("and"):
-				emulator.setRegisters(lineContents[1].trim(), emulator.getRegisterValue(lineContents[2].trim()) & emulator.getRegisterValue(lineContents[3].trim()));
-				PCline++;
-				break;
-			case("or"):
-				emulator.setRegisters(lineContents[1].trim(), emulator.getRegisterValue(lineContents[2].trim()) | emulator.getRegisterValue(lineContents[3].trim()));
-				PCline++;
-				break; 
-			case("add"):
-				emulator.setRegisters(lineContents[1].trim(), emulator.getRegisterValue(lineContents[2].trim()) + emulator.getRegisterValue(lineContents[3].trim()));
-				PCline++;
-				break;
-			case("addi"):
-				emulator.setRegisters(lineContents[1].trim(), emulator.getRegisterValue(lineContents[2].trim()) + Integer.parseInt(lineContents[3].trim()));
-				PCline++;
-				break;
-			case("sll"):
-				emulator.setRegisters(lineContents[1].trim(), emulator.getRegisterValue(lineContents[2].trim()) << Integer.parseInt(lineContents[3].trim()));
-				PCline++;
-				break;
-			case("sub"):
-				emulator.setRegisters(lineContents[1].trim(), emulator.getRegisterValue(lineContents[2].trim()) - emulator.getRegisterValue(lineContents[3].trim()));
-				PCline++;
-				break;
-			case("slt"):
-				if(emulator.getRegisterValue(lineContents[2].trim()) >= emulator.getRegisterValue(lineContents[3].trim())) {
-					emulator.setRegisters(lineContents[1].trim(), 0);
-				} else {
-					emulator.setRegisters(lineContents[1].trim(), 1);
-				}
-				PCline++;
-				break;
-			case("beq"):
-				if(emulator.getRegisterValue(lineContents[1].trim()) == emulator.getRegisterValue(lineContents[2].trim())) {
-					cpu.takenBranchFlag = true;
-					PCline = labels.get(lineContents[3].trim());
-				} else {
+		if (!cpu.jumpFlag && !cpu.takenBranchFlag) {
+			switch (lineContents[0].trim()){
+				case("and"):
+					emulator.setRegisters(lineContents[1].trim(), emulator.getRegisterValue(lineContents[2].trim()) & emulator.getRegisterValue(lineContents[3].trim()));
 					PCline++;
-				}
-				break;
-			case("bne"):
-				
-				if(emulator.getRegisterValue(lineContents[1].trim()) != emulator.getRegisterValue(lineContents[2].trim())) {
-					cpu.takenBranchFlag = true;
-					PCline = labels.get(lineContents[3].trim());
-				} else {
+					break;
+				case("or"):
+					emulator.setRegisters(lineContents[1].trim(), emulator.getRegisterValue(lineContents[2].trim()) | emulator.getRegisterValue(lineContents[3].trim()));
 					PCline++;
-				}
-				break;
-			case("lw"):
-				memLocation = lineContents[2].split("[(]");
-				memLocation[1] = memLocation[1].substring(0,memLocation[1].length()-1);
-				emulator.setRegisters(lineContents[1], emulator.getDataMemoryValue(emulator.getRegisterValue(memLocation[1])+Integer.parseInt(memLocation[0])));
-				if(instructions.get(PCline+1).contains(lineContents[1])) {
-					cpu.useAfterLoadFlag = true;					
-				}
-				PCline++;
-				break;
-			case("sw"):
-				memLocation = lineContents[2].split("[(]");
-				memLocation[1] = memLocation[1].substring(0,memLocation[1].length()-1);
-				emulator.setDataMemory(emulator.getRegisterValue(lineContents[1]), emulator.getRegisterValue(memLocation[1])+Integer.parseInt(memLocation[0]));	
-				PCline++;
-				break;
-			case("j"):
-				PCline = labels.get(lineContents[1]);
-				cpu.jumpFlag = true;
-				break;
-			case("jr"):
-				PCline = emulator.getRegisterValue(lineContents[1]);	
-				cpu.jumpFlag = true;
-			break;
-			case("jal"):
-				emulator.setRegisters("$ra", PCline+1);
-				PCline = labels.get(lineContents[1]);
-				cpu.jumpFlag = true;
-				//clearNonPersistantRegisters(emulator);
-				break;
-			default:
-				System.out.println("invalid instruction");
+					break; 
+				case("add"):
+					emulator.setRegisters(lineContents[1].trim(), emulator.getRegisterValue(lineContents[2].trim()) + emulator.getRegisterValue(lineContents[3].trim()));
+					PCline++;
+					break;
+				case("addi"):
+					emulator.setRegisters(lineContents[1].trim(), emulator.getRegisterValue(lineContents[2].trim()) + Integer.parseInt(lineContents[3].trim()));
+					PCline++;
+					break;
+				case("sll"):
+					emulator.setRegisters(lineContents[1].trim(), emulator.getRegisterValue(lineContents[2].trim()) << Integer.parseInt(lineContents[3].trim()));
+					PCline++;
+					break;
+				case("sub"):
+					emulator.setRegisters(lineContents[1].trim(), emulator.getRegisterValue(lineContents[2].trim()) - emulator.getRegisterValue(lineContents[3].trim()));
+					PCline++;
+					break;
+				case("slt"):
+					if(emulator.getRegisterValue(lineContents[2].trim()) >= emulator.getRegisterValue(lineContents[3].trim())) {
+						emulator.setRegisters(lineContents[1].trim(), 0);
+					} else {
+						emulator.setRegisters(lineContents[1].trim(), 1);
+					}
+					PCline++;
+					break;
+				case("beq"):
+					if(emulator.getRegisterValue(lineContents[1].trim()) == emulator.getRegisterValue(lineContents[2].trim())) {
+						cpu.takenBranchFlag = true;
+						emulator.branchDestination = labels.get(lineContents[3].trim());
+					}
+					PCline++;
+					break;
+				case("bne"):
+					if(emulator.getRegisterValue(lineContents[1].trim()) != emulator.getRegisterValue(lineContents[2].trim())) {
+						cpu.takenBranchFlag = true;
+						emulator.branchDestination = labels.get(lineContents[3].trim());
+					}	
+					PCline++;
+					break;
+				case("lw"):
+					memLocation = lineContents[2].split("[(]");
+					memLocation[1] = memLocation[1].substring(0,memLocation[1].length()-1);
+					emulator.setRegisters(lineContents[1], emulator.getDataMemoryValue(emulator.getRegisterValue(memLocation[1])+Integer.parseInt(memLocation[0])));
+					if(instructions.get(PCline+1).contains(lineContents[1]) && !instructions.get(PCline+1).contains("lw") && !instructions.get(PCline+1).contains("sw")) {
+						cpu.useAfterLoadFlag = true;					
+					}
+					PCline++;
+					break;
+				case("sw"):
+					memLocation = lineContents[2].split("[(]");
+					memLocation[1] = memLocation[1].substring(0,memLocation[1].length()-1);
+					emulator.setDataMemory(emulator.getRegisterValue(lineContents[1]), emulator.getRegisterValue(memLocation[1])+Integer.parseInt(memLocation[0]));	
+					PCline++;
+					break;
+				case("j"):
+					PCline++;
+					emulator.jumpDestination = labels.get(lineContents[1]);
+					cpu.jumpFlag = true;
+					break;
+				case("jr"):
+					PCline++;
+					emulator.jumpDestination = emulator.getRegisterValue(lineContents[1]);	
+					cpu.jumpFlag = true;
+					break;
+				case("jal"):
+					emulator.setRegisters("$ra", PCline+1);
+					emulator.jumpDestination = labels.get(lineContents[1]);
+					cpu.jumpFlag = true;
+					PCline++;
+					//clearNonPersistantRegisters(emulator);
+					break;
+				default:
+					System.out.println("invalid instruction");
+			}
+		} else {
+			PCline++;
 		}
 		cpu.numInstructions++;
+		if (PCline == instructions.size()) {
+			for (int i=0; i<4; i++) {
+				cpu.numCycles++;
+				executeInstruction(cpu, "empty");
+			}
+		}
 		return PCline;
 	}
 	
-	
 	public static void executeInstruction(CPU cpu, String instruction) {
-		//cpu.numCycles++;
 		cpu.intermediateRegs.put("MEM/WB reg", cpu.intermediateRegs.get("EXE/MEM reg"));
 		cpu.intermediateRegs.put("EXE/MEM reg", cpu.intermediateRegs.get("ID/EXE reg"));
 		cpu.intermediateRegs.put("ID/EXE reg", cpu.intermediateRegs.get("IF/ID reg"));

@@ -46,11 +46,12 @@ public class CPU {
 	}
 	
 	public void squash3() {
+		this.intermediateRegs.put("MEM/WB reg", this.intermediateRegs.get("EXE/MEM reg"));
 		this.intermediateRegs.put("IF/ID reg", "squash");
 		this.intermediateRegs.put("ID/EXE reg", "squash");
 		this.intermediateRegs.put("EXE/MEM reg", "squash");
-		this.intermediateRegs.put("MEM/WB reg", this.intermediateRegs.get("EXE/MEM reg"));
 		this.branchCtr = 0;
 		this.takenBranchFlag = false;
+		this.numInstructions-=2;
 	}
 }
