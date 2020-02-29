@@ -5,13 +5,15 @@ public class MIPSemulator {
 	int[] dataMemory;
 	Map<String, Integer> registers;
 	int jumpDestination, branchDestination;
+	BranchPredictor bp;
 	
-	public MIPSemulator()
+	public MIPSemulator(int GHRsize)
 	{
 		dataMemory = new int[8192];
 		registers = initializeRegisters();
 		jumpDestination = 0;
 		branchDestination = 0;
+		bp = new BranchPredictor(GHRsize);
 	}
 	
 	public Map<String, Integer> initializeRegisters() {
@@ -69,5 +71,11 @@ public class MIPSemulator {
 			System.out.println(registers.get("$ra"));
 		}
 		this.dataMemory[index] = value;
+	}
+	
+	public String getStatus() {
+		double percentCorrect = 100.0*((double)bp.numCorrectPredictions/bp.numPredictions);
+		return "accuracy " + String.format("%.2f", percentCorrect) + "% (" + bp.numCorrectPredictions + 
+			   " correct predictions, " + bp.numPredictions + " predictions)"; 
 	}
 }

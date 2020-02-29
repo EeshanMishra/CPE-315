@@ -5,21 +5,28 @@ public class lab5 {
 	public static void main(String[] args) throws IOException{
 		File inputFile = new File(args[0]);										//open and read file
 		Scanner scanner1 = new Scanner(inputFile);			
-		MIPSemulator emulator = new MIPSemulator();
+		MIPSemulator emulator;
+		if (args.length == 3) {
+			if (Integer.parseInt(args[2]) == 2) {
+				emulator = new MIPSemulator(2);					
+			} else if (Integer.parseInt(args[2]) == 4) {
+				emulator = new MIPSemulator(4);
+			} else {
+				emulator = new MIPSemulator(8);
+			}	
+		} else {
+			emulator = new MIPSemulator(2);	
+		}
+		//System.out.println(emulator.ghr.predictionArray.length);
 		Map<String,Integer> labels = storeLabelAddresses(scanner1);				//first pass, create a hashmap of labels and line 
 		Scanner scanner2 = new Scanner(inputFile);								//scanner to reread file for second pass
 		ArrayList<String> instructions = instructionArray(scanner2);
-		if (args.length == 2) {
-			File script = new File(args[1]);
-			processScriptInputs(script, labels, instructions, emulator);
-		} else {
-			processInteractiveInputs(labels, instructions, emulator);
-		}							
+		File script = new File(args[1]);
+		processScriptInputs(script, labels, instructions, emulator);		
 	}
 	
 	public static ArrayList<String> instructionArray(Scanner sc) {
 		ArrayList<String> instructions = new ArrayList<String>(); 
-		//int index = 0;
 		while(sc.hasNextLine()) {
 			String thisLine = sc.nextLine().trim();
 			if (thisLine.length() != 0) {
@@ -164,9 +171,11 @@ public class lab5 {
 				for (Map.Entry<String, Integer> entry : emulator.getRegister().entrySet())
 				     entry.setValue(0);
 				break;
+			case ('b'):
+				System.out.println(emulator.getStatus()); 
+				break;
 			case ('q'):
 				return -1;
-			default:	
 		}		
 		emulator.setRegisters("pc", PCline); 
 		return PCline;
@@ -211,16 +220,34 @@ public class lab5 {
 				PCline++;
 				break;
 			case("beq"):
+				emulator.bp.numPredictions++;
 				if(emulator.getRegisterValue(lineContents[1].trim()) == emulator.getRegisterValue(lineContents[2].trim())) {
+					if (emulator.bp.getPrediction() == true) {
+						emulator.bp.numCorrectPredictions++;
+					}
+					emulator.bp.updatePrediction(true);
 					PCline = labels.get(lineContents[3].trim());
 				} else {
+					if (emulator.bp.getPrediction() == false) {
+						emulator.bp.numCorrectPredictions++;
+					}
+					emulator.bp.updatePrediction(false);
 					PCline++;
 				}
 				break;
 			case("bne"):
+				emulator.bp.numPredictions++;
 				if(emulator.getRegisterValue(lineContents[1].trim()) != emulator.getRegisterValue(lineContents[2].trim())) {
+					if (emulator.bp.getPrediction() == true) {
+						emulator.bp.numCorrectPredictions++;
+					}
+					emulator.bp.updatePrediction(true);
 					PCline = labels.get(lineContents[3].trim());
 				} else {
+					if (emulator.bp.getPrediction() == false) {
+						emulator.bp.numCorrectPredictions++;
+					}
+					emulator.bp.updatePrediction(false);
 					PCline++;
 				}
 				break;
