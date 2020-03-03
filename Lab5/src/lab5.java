@@ -21,8 +21,12 @@ public class lab5 {
 		Map<String,Integer> labels = storeLabelAddresses(scanner1);				//first pass, create a hashmap of labels and line 
 		Scanner scanner2 = new Scanner(inputFile);								//scanner to reread file for second pass
 		ArrayList<String> instructions = instructionArray(scanner2);
-		File script = new File(args[1]);
-		processScriptInputs(script, labels, instructions, emulator);		
+		if (args.length == 1) {
+			processInteractiveInputs(labels, instructions, emulator);
+		} else {
+			File script = new File(args[1]);
+			processScriptInputs(script, labels, instructions, emulator);		
+		}	
 	}
 	
 	public static ArrayList<String> instructionArray(Scanner sc) {

@@ -17,4 +17,4 @@ equal2:	add $a0, $0, $0
   add $a0, $0, $0
   add $a0, $0, $0
   add $a0, $0, $0
-  add $a0, $0, $
+  add $a0, $0, $0
