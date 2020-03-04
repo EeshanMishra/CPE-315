@@ -2,7 +2,6 @@
 addi $sp, $0, 4095
 add $s0, $0, $0 			#s0: coordinate pointer
 
-
 #main program
 addi $a0, $0, 30
 addi $a1, $0, 100
@@ -68,7 +67,7 @@ line:			slt $t0, $a0, $a2
 greaterThanX:	sub $t2, $a0, $a2
 
 compareY:		slt $t1, $a1, $a3
-				beq $t0, $0, greaterThanY
+				beq $t1, $0, greaterThanY
 				sub $t3, $a3, $a1
 				j compareAbs
 
@@ -139,7 +138,7 @@ errorHandle:	add $s4, $s4, $s3
 				slt $t2, $t1, $s2
 				bne $t2, $0, updateCtr
 				add $s5, $s5, $s6
-				sub $s4, $s4, $s3
+				sub $s4, $s4, $s2
 
 updateCtr:		addi $t0, $t0, 1			#70
 				bne $t0, $t3, loop

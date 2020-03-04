@@ -112,7 +112,7 @@ public class lab5 {
 		}
 	}
 	
-	public static int processInput(int PCline, String inputLine, ArrayList<String> instructions, Map<String,Integer> labels, MIPSemulator emulator) {
+	public static int processInput(int PCline, String inputLine, ArrayList<String> instructions, Map<String,Integer> labels, MIPSemulator emulator) throws FileNotFoundException {
 		switch(inputLine.charAt(0)) {
 			case ('h'):
 				System.out.println("h = show help\r\n" + 
@@ -177,6 +177,21 @@ public class lab5 {
 				break;
 			case ('b'):
 				System.out.println(emulator.getStatus()); 
+				break;
+			case ('o'):	
+				PrintStream ps = new PrintStream("coordinates.csv");
+				ps.flush();
+				int nextXVal = emulator.dataMemory[0];
+				int nextYVal = emulator.dataMemory[1];
+				int dataMemPtr = 0;
+				while (nextXVal != 0 && nextYVal != 0) {
+					ps.println(nextXVal + "," + nextYVal);
+					//ps.println(nextYVal);
+					dataMemPtr += 2;
+					nextXVal = emulator.dataMemory[dataMemPtr];
+					nextYVal = emulator.dataMemory[dataMemPtr+1];
+				}
+				ps.close();
 				break;
 			case ('q'):
 				return -1;
