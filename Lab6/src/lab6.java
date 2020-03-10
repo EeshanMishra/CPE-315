@@ -1,7 +1,6 @@
 import java.io.*;
 import java.util.*;
 
-
 public class lab6 {
 	public static void main(String[] args) throws IOException{
 		//initialize variables for statistic keeping
@@ -27,12 +26,77 @@ public class lab6 {
 		File inputFile = new File(args[0]);
 		Scanner sc = new Scanner(inputFile);
 		String thisLine, address;
-		//while(sc.hasNextLine()) {
+		while(sc.hasNextLine()) {
+		//for (int i=0; i<1; i++) {
 			thisLine = sc.nextLine();
 			address = thisLine.substring(1,thisLine.length()).trim();
-			System.out.println(hexToBinary(address));
-		//}
-		
+			address = hexToBinary(address);
+			if (DMcache_2kB_1word.searchCache(address)) {
+				cache1Hits++;
+			}
+			if (DMcache_2kB_2word.searchCache(address)) {
+				cache2Hits++;
+			}
+			if (DMcache_2kB_4word.searchCache(address)) {
+				cache3Hits++;
+			}
+			if (Acache_2kB_2way_1word.searchCache(address, numCacheAddresses)) {
+				cache4Hits++;
+			}
+			if (Acache_2kB_4way_1word.searchCache(address, numCacheAddresses)) {
+				cache5Hits++;
+			}
+			if (Acache_2kB_4way_4word.searchCache(address, numCacheAddresses)) {
+				cache6Hits++;
+			}
+			if (DMcache_4kB_1word.searchCache(address)) {
+				cache7Hits++;
+			}
+			numCacheAddresses++;
+		}
+		//System.out.println(numCacheAddresses);
+		double cache1Percentage = (double)(cache1Hits*100)/numCacheAddresses;
+		double cache2Percentage = (double)(cache2Hits*100)/numCacheAddresses;
+		double cache3Percentage = (double)(cache3Hits*100)/numCacheAddresses;
+		double cache4Percentage = (double)(cache4Hits*100)/numCacheAddresses;
+		double cache5Percentage = (double)(cache5Hits*100)/numCacheAddresses;
+		double cache6Percentage = (double)(cache6Hits*100)/numCacheAddresses;
+		double cache7Percentage = (double)(cache7Hits*100)/numCacheAddresses;
+		System.out.println("Cache #1\n" + 
+						   "Cache size: 2048B\tAssociativity: 1\tBlock size: 1\n" +
+						   "Hits: " + cache1Hits + "\tHit Rate: " + String.format("%.2f", cache1Percentage) + "%\n" +
+						   "---------------------------");
+		System.out.println("Cache #2\n" + 
+				           "Cache size: 2048B\tAssociativity: 1\tBlock size: 2\n" +
+				           "Hits: " + cache2Hits + "\tHit Rate: " + String.format("%.2f", cache2Percentage) + "%\n" +
+				   		   "---------------------------");
+		System.out.println("Cache #3\n" + 
+				   		   "Cache size: 2048B\tAssociativity: 1\tBlock size: 4\n" +
+				   		   "Hits: " + cache3Hits + "\tHit Rate: " + String.format("%.2f", cache3Percentage) + "%\n" +
+				   		   "---------------------------");		
+		System.out.println("Cache #4\n" + 
+				   		   "Cache size: 2048B\tAssociativity: 2\tBlock size: 1\n" +
+				   		   "Hits: " + cache4Hits + "\tHit Rate: " + String.format("%.2f", cache4Percentage) + "%\n" +
+				   	       "---------------------------");		
+		System.out.println("Cache #5\n" + 
+         				   "Cache size: 2048B\tAssociativity: 4\tBlock size: 1\n" +
+         				   "Hits: " + cache5Hits + "\tHit Rate: " + String.format("%.2f", cache5Percentage) + "%\n" +
+				   		   "---------------------------");		
+		System.out.println("Cache #6\n" + 
+						   "Cache size: 2048B\tAssociativity: 4\tBlock size: 4\n" +
+						   "Hits: " + cache6Hits + "\tHit Rate: " + String.format("%.2f", cache6Percentage) + "%\n" +
+				           "---------------------------");		
+		System.out.println("Cache #7\n" + 
+				           "Cache size: 4096B\tAssociativity: 1\tBlock size: 1\n" +
+				           "Hits: " + cache7Hits + "\tHit Rate: " + String.format("%.2f", cache7Percentage) + "%\n" +
+				           "---------------------------");		
+		System.out.println(cache2Hits);
+		System.out.println(cache3Hits);
+		System.out.println(cache4Hits);
+		System.out.println(cache5Hits);
+		System.out.println(cache6Hits);
+		System.out.println(cache7Hits);
+		sc.close();
 	}	
 	
 	
