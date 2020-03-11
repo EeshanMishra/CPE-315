@@ -54,7 +54,6 @@ public class lab6 {
 			}
 			numCacheAddresses++;
 		}
-		//System.out.println(numCacheAddresses);
 		double cache1Percentage = (double)(cache1Hits*100)/numCacheAddresses;
 		double cache2Percentage = (double)(cache2Hits*100)/numCacheAddresses;
 		double cache3Percentage = (double)(cache3Hits*100)/numCacheAddresses;
@@ -90,12 +89,6 @@ public class lab6 {
 				           "Cache size: 4096B\tAssociativity: 1\tBlock size: 1\n" +
 				           "Hits: " + cache7Hits + "\tHit Rate: " + String.format("%.2f", cache7Percentage) + "%\n" +
 				           "---------------------------");		
-		System.out.println(cache2Hits);
-		System.out.println(cache3Hits);
-		System.out.println(cache4Hits);
-		System.out.println(cache5Hits);
-		System.out.println(cache6Hits);
-		System.out.println(cache7Hits);
 		sc.close();
 	}	
 	

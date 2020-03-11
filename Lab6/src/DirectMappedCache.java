@@ -7,28 +7,30 @@ public class DirectMappedCache {
 	
 	public DirectMappedCache(int size, int blockSize) {
 		this.size = size;
-		this.cacheSize = (size * 256);
+		this.cacheSize = (size * 256)/blockSize;
 		this.cache = new int[cacheSize];
 		this.blockSize = blockSize;
 	}
 	
 	public boolean searchCache(String address) {
-		int wordOffsetMSB = 2;
+		int offsetBits = 2;
+		int indexSize = 0;
+		if (this.blockSize == 2) {
+			offsetBits += 1;				
+			indexSize -= 1;
+		} else if (this.blockSize == 4) {
+			offsetBits += 2;
+			indexSize -= 2;
+		}
 		int indexMSB = 0;
-		if (this.blockSize == 1) {
-			wordOffsetMSB += 0;
-		} else if (this.blockSize == 2) {
-			wordOffsetMSB += 1;
-		} else {
-			wordOffsetMSB += 2;
-		}
 		if (this.size == 2) {		//2kB
-			indexMSB = wordOffsetMSB + 9;
-		} else if (this.size == 4) {
-			indexMSB = wordOffsetMSB + 10;
+			indexSize += 9;
+		} else if (this.size == 4) {	//4kB
+			indexSize += 10;
 		}
-		int tag = binaryToDecimal(address.substring(0,32-indexMSB));
-		int index = binaryToDecimal(address.substring(32-indexMSB,32-wordOffsetMSB));
+		int tagSize = 32 - indexSize - offsetBits; 
+		int tag = binaryToDecimal(address.substring(0,tagSize));
+		int index = binaryToDecimal(address.substring(tagSize,tagSize+indexSize));
 		//index = Math.floorDiv(index,blockSize);
 		//System.out.println("tag: " + address.substring(0,32-indexMSB) + " = " + tag);
 		//System.out.println("index: " + address.substring(32-indexMSB,32-wordOffsetMSB) + " = " + index);
@@ -36,10 +38,10 @@ public class DirectMappedCache {
 			return true;
 		} 
 		this.cache[index] = tag;
-		for (int m=0; m<this.blockSize; m++) {
-			this.cache[index - (index % this.blockSize) + m] = tag;
-			//System.out.println(index - (index % blockSize) + m);
-		}
+//		for (int m=0; m<this.blockSize; m++) {
+//			this.cache[index - (index % this.blockSize) + m] = tag;
+//			//System.out.println(index - (index % blockSize) + m);
+//		}
 		return false;
 	}
 	

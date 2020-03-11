@@ -5,7 +5,7 @@ public class AssociativeCache {
 	
 	public AssociativeCache(int size, int associativity, int blockSize) {
 		this.size = size;
-		this.waySize = (size * 256)/associativity;
+		this.waySize = (size * 256)/(associativity*blockSize);
 		this.associativity = associativity;
 		this.blockSize = blockSize;
 		this.LRDarray = new int[this.waySize][this.associativity];
@@ -13,19 +13,28 @@ public class AssociativeCache {
 	}
 	
 	public boolean searchCache(String address, int lineNum) {
-		int wordOffsetMSB = 2;
-		int indexMSB = 0;
-		if (this.blockSize == 1) {
-			wordOffsetMSB += 0;
-		} else if (this.blockSize == 2) {
-			wordOffsetMSB += 1;
-		} else {
-			wordOffsetMSB += 2;
+		int offsetBits = 2;
+		int indexSize = 0;
+		if (this.blockSize == 2) {
+			offsetBits += 1;				
+			indexSize -= 1;
+		} else if (this.blockSize == 4) {
+			offsetBits += 2;
+			indexSize -= 2;
 		}
-		indexMSB = wordOffsetMSB + 9 - (this.associativity/2);
-		int tag = binaryToDecimal(address.substring(0,32-indexMSB));
-		int index = binaryToDecimal(address.substring(32-indexMSB,32-wordOffsetMSB));
-		index = index % this.waySize;
+		if (this.associativity == 2) {
+			indexSize -= 1;
+		} else if (this.associativity == 4) {
+			indexSize -= 2;
+		}
+		if (this.size == 2) {		//2kB
+			indexSize += 9;
+		} else if (this.size == 4) {	//4kB
+			indexSize += 10;
+		}
+		int tagSize = 32 - indexSize - offsetBits; 
+		int tag = binaryToDecimal(address.substring(0,tagSize));
+		int index = binaryToDecimal(address.substring(tagSize,tagSize+indexSize));
 		for (int i=0; i<this.associativity; i++) {
 			if (this.ways[index][i] == tag) {
 				LRDarray[index][i] = lineNum;
@@ -37,9 +46,10 @@ public class AssociativeCache {
 		for (int i=0; i<this.associativity; i++) {
 			if (this.LRDarray[index][i] == 0) {
 				LRDarray[index][i] = lineNum;
-				for (int m=0; m<this.blockSize; m++) {
-					this.ways[index - (index % this.blockSize) + m][i] = tag;
-				}
+				this.ways[index][i] = tag;
+//				for (int m=0; m<this.blockSize; m++) {
+//					this.ways[index - (index % this.blockSize) + m][i] = tag;
+//				}
 				return false;
 			} else {
 				if (this.LRDarray[index][i] < lowestVal) {
@@ -48,9 +58,10 @@ public class AssociativeCache {
 				}
 			}
 		}
-		for (int m=0; m<this.blockSize; m++) {
-			this.ways[index - (index % this.blockSize) + m][lowestIndex] = tag;
-		}
+		this.ways[index][lowestIndex] = tag;
+//		for (int m=0; m<this.blockSize; m++) {
+//			this.ways[index - (index % this.blockSize) + m][lowestIndex] = tag;
+//		}
 		this.LRDarray[index][lowestIndex] = lineNum;
 		return false;
 	}
